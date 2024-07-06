@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game with Levels</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameContainer {
+            text-align: center;
+        }
+
+        #gameCanvas {
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <h1>Snake Game</h1>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <p>Level: <span id="levelDisplay">1</span> | Score: <span id="scoreDisplay">0</span></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [{ x: 10, y: 10 }];
+        let food = { x: 15, y: 15 };
+        let obstacles = [];
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let level = 1;
+        let speed = 7;
+
+        function gameLoop() {
+            updateSnake();
+            if (checkCollision()) {
+                alert(`Game Over! Your score: ${score}`);
+                resetGame();
+                return;
+            }
+            clearCanvas();
+            drawObstacles();
+            drawFood();
+            drawSnake();
+            setTimeout(gameLoop, 1000 / speed);
+        }
+
+        function updateSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                scoreDisplay.textContent = score;
+                if (score % 5 === 0) {
+                    levelUp();
+                }
+                generateFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                return true;
+            }
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            for (const obstacle of obstacles) {
+                if (head.x === obstacle.x && head.y === obstacle.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = 'green';
+            for (const segment of snake) {
+                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+            }
+        }
+
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = 'gray';
+            for (const obstacle of obstacles) {
+                ctx.fillRect(obstacle.x * gridSize, obstacle.y * gridSize, gridSize - 2, gridSize - 2);
+            }
+        }
+
+        function generateFood() {
+            food = {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount)
+            };
+            // Ensure food doesn't spawn on snake or obstacles
+            while (snake.some(segment => segment.x === food.x && segment.y === food.y) ||
+                obstacles.some(obstacle => obstacle.x === food.x && obstacle.y === food.y)) {
+                food = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount)
+                };
+            }
+        }
+
+        function levelUp() {
+            level++;
+            levelDisplay.textContent = level;
+            speed += 1;
+            addObstacles();
+        }
+
+        function addObstacles() {
+            const obstacleCount = Math.min(level, 5); // Max 5 obstacles
+            for (let i = 0; i < obstacleCount; i++) {
+                const obstacle = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount)
+                };
+                // Ensure obstacle doesn't spawn on snake, food, or other obstacles
+                while (snake.some(segment => segment.x === obstacle.x && segment.y === obstacle.y) ||
+                    food.x === obstacle.x && food.y === obstacle.y ||
+                    obstacles.some(obs => obs.x === obstacle.x && obs.y === obstacle.y)) {
+                    obstacle.x = Math.floor(Math.random() * tileCount);
+                    obstacle.y = Math.floor(Math.random() * tileCount);
+                }
+                obstacles.push(obstacle);
+            }
+        }
+
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            dx = 0;
+            dy = 0;
+            score = 0;
+            level = 1;
+            speed = 7;
+            obstacles = [];
+            generateFood();
+            scoreDisplay.textContent = score;
+            levelDisplay.textContent = level;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (dy === 0) { dx = 0; dy = -1; }
+                    break;
+                case 'ArrowDown':
+                    if (dy === 0) { dx = 0; dy = 1; }
+                    break;
+                case 'ArrowLeft':
+                    if (dx === 0) { dx = -1; dy = 0; }
+                    break;
+                case 'ArrowRight':
+                    if (dx === 0) { dx = 1; dy = 0; }
+                    break;
+            }
+        });
+
+        resetGame();
+        gameLoop();
+    </script>
+</body>
+
+</html>
